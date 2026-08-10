@@ -4,7 +4,9 @@ dist/
 .env.local
 *.log
 *-deploy.zip
+genuina-sites.tar.gz
 .DS_Store
 Thumbs.db
 .vscode/
+.wrangler/
 !.vscode/extensions.json

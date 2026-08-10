@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "genuina-marcha",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-08-10",
+  "assets": {
+    "not_found_handling": "single-page-application"
+  }
+}
