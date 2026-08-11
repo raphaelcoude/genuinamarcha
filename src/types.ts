@@ -25,6 +25,10 @@ export interface Horse {
   coat: string | null
   sire_name: string | null
   dam_name: string | null
+  microchip?: string | null
+  owner_name?: string | null
+  location_note?: string | null
+  notes?: string | null
   status: 'active' | 'sold' | 'deceased' | 'transferred'
   created_at: string
 }

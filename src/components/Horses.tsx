@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Horse, HorseInput, Organization } from '../types'
 
-const emptyHorse: HorseInput = { name: '', registration_number: null, sex: 'female', breed: 'Mangalarga Marchador', birth_date: null, coat: null, sire_name: null, dam_name: null, status: 'active' }
+const emptyHorse: HorseInput = { name: '', registration_number: null, sex: 'female', breed: 'Mangalarga Marchador', birth_date: null, coat: null, sire_name: null, dam_name: null, microchip: null, owner_name: null, location_note: null, notes: null, status: 'active' }
 
-export function Horses({ organization, canEdit }: { organization: Organization, canEdit: boolean }) {
+export function Horses({ organization, canEdit, onChanged }: { organization: Organization; canEdit: boolean; onChanged?: () => void }) {
   const [horses, setHorses] = useState<Horse[]>([])
   const [form, setForm] = useState<HorseInput>(emptyHorse)
   const [editing, setEditing] = useState<Horse | null>(null)
@@ -18,18 +18,18 @@ export function Horses({ organization, canEdit }: { organization: Organization, 
   }
   useEffect(() => { void load() }, [organization.id])
 
-  function startEdit(horse: Horse) { setEditing(horse); setForm({ name: horse.name, registration_number: horse.registration_number, sex: horse.sex, breed: horse.breed, birth_date: horse.birth_date, coat: horse.coat, sire_name: horse.sire_name, dam_name: horse.dam_name, status: horse.status }); setOpen(true) }
+  function startEdit(horse: Horse) { setEditing(horse); setForm({ name: horse.name, registration_number: horse.registration_number, sex: horse.sex, breed: horse.breed, birth_date: horse.birth_date, coat: horse.coat, sire_name: horse.sire_name, dam_name: horse.dam_name, microchip: horse.microchip, owner_name: horse.owner_name, location_note: horse.location_note, notes: horse.notes, status: horse.status }); setOpen(true) }
   function startNew() { setEditing(null); setForm(emptyHorse); setOpen(true) }
   async function save(event: FormEvent) {
     event.preventDefault(); if (!supabase) return
     const query = editing ? supabase.from('horses').update(form).eq('id', editing.id) : supabase.from('horses').insert({ ...form, organization_id: organization.id })
     const { error } = await query
-    if (error) setMessage(error.message); else { setOpen(false); setMessage(''); await load() }
+    if (error) setMessage(error.message); else { setOpen(false); setMessage(''); await load(); onChanged?.() }
   }
   async function remove(horse: Horse) {
     if (!supabase || !confirm(`Excluir ${horse.name}? Esta ação não pode ser desfeita.`)) return
     const { error } = await supabase.from('horses').delete().eq('id', horse.id)
-    if (error) setMessage(error.message); else await load()
+    if (error) setMessage(error.message); else { await load(); onChanged?.() }
   }
 
   return <section className="content horses-page">
@@ -45,7 +45,10 @@ export function Horses({ organization, canEdit }: { organization: Organization, 
       <div className="form-row"><label>Sexo<select value={form.sex} onChange={e => setForm({...form,sex:e.target.value as HorseInput['sex']})}><option value="female">Fêmea</option><option value="male">Macho</option><option value="gelding">Castrado</option></select></label><label>Nascimento<input type="date" value={form.birth_date ?? ''} onChange={e => setForm({...form,birth_date:e.target.value || null})}/></label></div>
       <div className="form-row"><label>Raça<input value={form.breed} required onChange={e => setForm({...form,breed:e.target.value})}/></label><label>Pelagem<input value={form.coat ?? ''} onChange={e => setForm({...form,coat:e.target.value || null})}/></label></div>
       <div className="form-row"><label>Pai<input value={form.sire_name ?? ''} onChange={e => setForm({...form,sire_name:e.target.value || null})}/></label><label>Mãe<input value={form.dam_name ?? ''} onChange={e => setForm({...form,dam_name:e.target.value || null})}/></label></div>
+      <div className="form-row"><label>Microchip<input value={form.microchip ?? ''} onChange={e => setForm({...form,microchip:e.target.value || null})}/></label><label>Proprietário<input value={form.owner_name ?? ''} onChange={e => setForm({...form,owner_name:e.target.value || null})}/></label></div>
+      <label>Localização atual<input value={form.location_note ?? ''} placeholder="Ex.: Baia 03, piquete norte" onChange={e => setForm({...form,location_note:e.target.value || null})}/></label>
       <label>Situação<select value={form.status} onChange={e => setForm({...form,status:e.target.value as HorseInput['status']})}><option value="active">Ativo</option><option value="sold">Vendido</option><option value="transferred">Transferido</option><option value="deceased">Falecido</option></select></label>
+      <label>Observações<textarea value={form.notes ?? ''} onChange={e => setForm({...form,notes:e.target.value || null})}/></label>
       <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setOpen(false)}>Cancelar</button><button className="primary-button">Salvar animal</button></div>
     </form></div>}
   </section>
