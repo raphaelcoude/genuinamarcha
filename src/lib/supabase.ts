@@ -10,3 +10,8 @@ export const supabase = isConfigured
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
     })
   : null
+
+export function organizationLogoUrl(path?: string | null) {
+  if (!supabase || !path) return null
+  return supabase.storage.from('organization-logos').getPublicUrl(path).data.publicUrl
+}

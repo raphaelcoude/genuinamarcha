@@ -4,6 +4,9 @@ export interface Organization {
   id: string
   name: string
   slug: string
+  city?: string | null
+  state?: string | null
+  logo_path?: string | null
 }
 
 export interface Membership {

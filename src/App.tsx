@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Auth } from './components/Auth'
 import { Horses } from './components/Horses'
+import { HarasSettings } from './components/HarasSettings'
 import { Onboarding } from './components/Onboarding'
 import { PlatformAdmin } from './components/PlatformAdmin'
-import { isConfigured, supabase } from './lib/supabase'
+import { isConfigured, organizationLogoUrl, supabase } from './lib/supabase'
 import type { Membership } from './types'
 
-type Page = 'overview' | 'horses'
+type Page = 'overview' | 'horses' | 'settings'
 type AdminView = 'platform' | 'haras' | 'create-haras'
 
 export function App() {
@@ -23,7 +24,7 @@ export function App() {
     if (!supabase) return
     const { data: admin } = await supabase.from('platform_admins').select('user_id').maybeSingle()
     setPlatformAdmin(Boolean(admin))
-    const { data } = await supabase.from('memberships').select('role, organization:organizations(id,name,slug)').eq('status', 'active').limit(1).maybeSingle()
+    const { data } = await supabase.from('memberships').select('role, organization:organizations(id,name,slug,city,state,logo_path)').eq('status', 'active').limit(1).maybeSingle()
     if (data) setMembership(data as unknown as Membership); else setMembership(null)
   }
 
@@ -43,9 +44,10 @@ export function App() {
   if (!membership) return <Onboarding onDone={loadMembership} />
 
   const canEdit = ['owner', 'admin', 'manager'].includes(membership.role)
+  const harasLogo = organizationLogoUrl(membership.organization.logo_path)
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
-      <button className="brand brand-button" onClick={() => setPage('overview')}><span className="brand-mark">GM</span><span>Genuína<br/><strong>Marcha</strong></span></button>
+      <button className="brand brand-button haras-brand" onClick={() => setPage('overview')}>{harasLogo ? <img src={harasLogo} alt={`Logo ${membership.organization.name}`}/> : <span className="brand-mark">{membership.organization.name.slice(0,2).toUpperCase()}</span>}<span><small>AMBIENTE DO HARAS</small><strong>{membership.organization.name}</strong></span></button>
       <nav aria-label="Navegação principal">
         <button className={`nav-link ${page === 'overview' ? 'active' : ''}`} onClick={() => { setPage('overview'); setMenuOpen(false) }}><span>⌂</span>Visão geral</button>
         <button className={`nav-link ${page === 'horses' ? 'active' : ''}`} onClick={() => { setPage('horses'); setMenuOpen(false) }}><span>♞</span>Cavalos</button>
@@ -53,12 +55,13 @@ export function App() {
         <button className="nav-link" disabled><span>◇</span>Estoque <small>em breve</small></button>
         <button className="nav-link" disabled><span>✚</span>Saúde e manejo</button>
         <button className="nav-link" disabled><span>↗</span>Financeiro</button>
+        {canEdit && <button className={`nav-link ${page === 'settings' ? 'active' : ''}`} onClick={() => { setPage('settings'); setMenuOpen(false) }}><span>⚙</span>Personalização</button>}
       </nav>
       <div className="sidebar-footer"><div className="farm-avatar">{membership.organization.name.slice(0,2).toUpperCase()}</div><div><strong>{membership.organization.name}</strong><small>{membership.role === 'owner' ? 'Proprietário' : membership.role}</small></div></div>
     </aside>
     <main>
       <header className="topbar"><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">☰</button>{platformAdmin && <button className="back-platform-button" onClick={() => setAdminView('platform')}>← Painel da plataforma</button>}<div className="search"><span>⌕</span><input type="search" placeholder="Buscar no haras…"/></div><div className="user"><span className="user-avatar">{userName.slice(0,2).toUpperCase()}</span><span><strong>{userName}</strong><button className="signout" onClick={() => supabase?.auth.signOut()}>Sair</button></span></div></header>
-      {page === 'horses' ? <Horses organization={membership.organization} canEdit={canEdit}/> : <Overview name={userName.split(' ')[0]} onHorses={() => setPage('horses')}/>} 
+      {page === 'horses' ? <Horses organization={membership.organization} canEdit={canEdit}/> : page === 'settings' ? <HarasSettings organization={membership.organization} onSaved={loadMembership}/> : <Overview name={userName.split(' ')[0]} onHorses={() => setPage('horses')}/>} 
     </main>
   </div>
 }
